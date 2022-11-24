@@ -5,6 +5,7 @@ Created on Fri May 28 12:55:20 2021
 
 @author: davidhealy
 """
+#   all the libraries we need...
 import time
 import pfs 
 import numpy as np 
@@ -16,34 +17,29 @@ from tqdm import tqdm
 
 print('\nStarting pfsRuhrBochum_Ts, version 1...')
 print('*** Ts (effective) analysis for Ruhr-Bochum - deep carbonate ***\n')
-
 tic = time.time() 
 
+###########################################################################
 #   initialise 
-nMC = 5000            #   number of Monte Carlo runs 
-nBins = 20           #   number of bins in histograms  
+nMC = 5000        #   number of Monte Carlo runs; keep this small (e.g., 100) for testing 
+nBins = 20        #   number of bins in histograms  
 
 #   set ranges of all variables other than strike 
-#   sV, sH, sh, sHaz, dip 
-###########################################################################
-#   define some stresses: magnitudes and orientations 
-
-#   sigmaV - vertical stress, in MPa 
+#   SV = sigmaV - vertical stress, in MPa 
 muSV = 110.6
 sdSV = 24.4 
-#   sigmaH - max horizontal stress, in MPa 
+#   SH = sigmaH - max horizontal stress, in MPa 
 muSH = 105.5
 sdSH = 54.
-#   sigmah - min horizontal stress, in MPa 
+#   Sh = sigmah - min horizontal stress, in MPa 
 muSh = 62.
 sdSh = 19.1 
 
-#   build distributions of each stress, such that s1 >= s2 >= s3 for all nMC
+#   build distributions of each stress
 #stress = pfs.setStressDist2(nMC, muSV, sdSV, muSH, sdSH, muSh, sdSh)
 #SV = stress[:,0]
 #SH = stress[:,1]
 #Sh = stress[:,2]
-
 a = +3. 
 SV = stats.norm.rvs(muSV, sdSV, nMC) 
 SH = stats.skewnorm.rvs(a, muSH, sdSH, nMC)
@@ -68,7 +64,7 @@ stdSh = Sh.std()
 rangeSh = maxSh - minSh 
 
 #   pore fluid pressure; can assume hydrostatic in many cases (= 0.4 * sV)
-muPf = 40.3      #   hydrostatic 
+muPf = 40.3       
 sdPf = muPf * .1 
 Pf = stats.norm.rvs(muPf, sdPf, nMC)
 minPf = Pf.min()
@@ -78,7 +74,6 @@ stdPf = Pf.std()
 rangePf = maxPf - minPf 
 
 #   SHmax azimuth
-#   von Mises circular normal distribution 
 SHazMean = 161.
 SHazKappa = 30. 
 #   von Mises symmetrical about mean, in range -pi to +pi
@@ -86,24 +81,25 @@ SHaz = pfs.rad2deg(np.random.vonmises(pfs.deg2rad(SHazMean), SHazKappa, nMC))
 minSHaz, maxSHaz, meanSHaz, medianSHaz, stddevSHaz = pfs.getCircStats2(SHaz) 
 rangeSHaz = maxSHaz - minSHaz 
 SHazTrue = np.copy(SHaz)
+#   keep the range to 0-180 
 SHaz[np.ix_(SHaz<0)] += 180.
 SHaz[np.ix_(SHaz>180)] -= 180.
 
-#   read in file of fault strikes and coordinates
+#   read in file of fault strikes
 fnSeg = 'FaultStrikes_RuhrBochum.txt'
 data = np.loadtxt(fnSeg, delimiter="\t")
 nFaults = len(data)
 FaultID = np.copy(data[:,0])
 Strike = np.copy(data[:,1])
+#   get the stats of this distribution 
 minStrike, maxStrike, meanStrike, medianStrike, stddevStrike = pfs.getCircStats2(Strike) 
 
-#   read in file of fault dips, if required  
+#   fault dips  
 minDip = 65. 
 maxDip = 85. 
 Dip = np.zeros([nFaults,1])
 for iF in range(0, nFaults):
     Dip[iF] = uniform(minDip, maxDip)
-#Dip = random sample between minDip and maxDip bounds 
 minDip, maxDip, meanDip, medianDip, stddevDip = pfs.getCircStats2(Dip) 
 rangeDip = maxDip - minDip 
 
@@ -123,6 +119,7 @@ nSh, bSh, pSh = ax3.hist(Sh, nBins)
 
 nMax123 = np.max([nSh.max(), nSH.max(), nSV.max()])*1.05 
 
+#   use modes rather than means as measure of skewed distributions  
 modeSH = bSH[np.ix_(nSH == nSH.max())] + (bSH[1]-bSH[0])/2.
 modeSh = bSh[np.ix_(nSh == nSh.max())] + (bSh[1]-bSh[0])/2.
 
@@ -209,13 +206,13 @@ ax7.set_title('Variation in pore pressure, n=%i' % nMC)
 plt.tight_layout() 
 plt.savefig('RuhrBochum Input Histograms.png', dpi=300)
 
-#   build a quadratic response surface using these distributions 
 ###########################################################################
 #   Response Surface Method (RSM)
+#   build a quadratic response surface using these distributions 
 #   linear regression over multiple variables, with linear & quadratic fits 
 #   assume 3^q design of calculation points - min, max and mean of each variable 
 #   where q is the number of variables in each term:
-#      for Ts q = 6
+#      for Ts q = 7
 #            for the parameters sV, sH, sh, sHaz, pf, strike & dip  
 #   all assuming Andersonian stresses with one principal stress vertical 
 qTs = 7      
@@ -297,10 +294,8 @@ Xq2Ts = np.dot(XqTs.T, XqTs)
 ySV = XlTs[:,1] * rangeSV / 2. + meanSV 
 ySH = XlTs[:,2] * rangeSH / 2. + meanSH 
 ySh = XlTs[:,3] * rangeSh / 2. + meanSh 
-
 ySHaz = XlTs[:,4] * rangeSHaz / 2. + meanSHaz 
 ySHaz[np.ix_(ySHaz < 0.)] += 180.
-
 yPf = XlTs[:,7] * rangePf / 2. + meanPf 
 
 # #   start Ts CDF figure for all faults 
@@ -308,10 +303,10 @@ xSV = (SV - meanSV) / (rangeSV / 2.)
 xSH = (SH - meanSH) / (rangeSH / 2.)  
 xSh = (Sh - meanSh) / (rangeSh / 2.)  
 xSHaz = (SHazTrue - meanSHaz) / (rangeSHaz / 2.)  
-#xDip = (Dip - meanDip) / (rangeDip / 2.) 
 xPf = (Pf - meanPf) / (rangePf / 2.) 
 
 fig, ax = plt.subplots(figsize=(6,4))
+#   arbitrary critical friction value to assess fault stability 
 muCrit = 0.6 
 sColour = []
 strikeTsq = np.zeros([nFaults,])
@@ -368,9 +363,6 @@ for j in tqdm(range(nFaults)):
     # #   get RS Ts value for this strike, this fault 
     xStrike = (thisStrike - meanStrike) / (rangeStrike / 2.)  
     xDip = (thisDip - meanDip) / (rangeDip / 2.)  
-    # strikeTsq[j] = (BetaTsq[0] + 
-    #                 BetaTsq[5] * xStrike +
-    #                 BetaTsq[26] * xStrike * xStrike)
     
     #   run nMC calculations of Ts using set ranges     
     mcTsq = np.zeros([nMC,])
@@ -420,12 +412,12 @@ for j in tqdm(range(nFaults)):
                         BetaTsq[34] * xDip * xDip +
                         BetaTsq[35] * xPf[i] * xPf[i])
        
-    #   calc CDF from all nMC runs for this fault  
+    #   calc CDF from all nMC runs for this fault segment  
     sortTs = np.sort(mcTsq)
     cumTs = (np.cumsum(sortTs) / np.sum(sortTs)) * 100.
     
     #   get the P value for the chosen critical Ts
-    #   colour code the fault segment 
+    #   colour code this fault segment 
     if np.min(sortTs) <= muCrit and np.max(sortTs) >= muCrit:    
         PTsCrit = np.min(cumTs[np.ix_(sortTs > muCrit)])
         if PTsCrit > 99.:
@@ -448,67 +440,18 @@ for j in tqdm(range(nFaults)):
         
     ax.plot(sortTs, cumTs, color=sColour[j], lw=0.5)
     
-    # sVTsq = np.zeros([nMC,])
-    # sHTsq = np.zeros([nMC,])
-    # shTsq = np.zeros([nMC,])
-    # sHazTsq = np.zeros([nMC,])
-    # strikeTsq = np.zeros([nMC,])
-    # dipTsq = np.zeros([nMC,])
-    # pfTsq = np.zeros([nMC,])
-
-    # for i in range(0, nMC):
-        
-    #     sVTsq[i] = (BetaTsq[0] + 
-    #                 BetaTsq[1] * xSV[i] +
-    #                 BetaTsq[29] * xSV[i] * xSV[i])
-
-    #     sHTsq[i] = (BetaTsq[0] + 
-    #                 BetaTsq[2] * xSH[i] +
-    #                 BetaTsq[30] * xSH[i] * xSH[i])
-
-    #     shTsq[i] = (BetaTsq[0] + 
-    #                 BetaTsq[3] * xSh[i] +
-    #                 BetaTsq[31] * xSh[i] * xSh[i])
-
-    #     sHazTsq[i] = (BetaTsq[0] + 
-    #                   BetaTsq[4] * xSHaz[i] +
-    #                   BetaTsq[32] * xSHaz[i] * xSHaz[i])
-
-    #     strikeTsq[i] = (BetaTsq[0] + 
-    #                     BetaTsq[5] * xStrike[i] +
-    #                     BetaTsq[33] * xStrike[i] * xStrike[i])
-
-    #     dipTsq[i] = (BetaTsq[0] + 
-    #                  BetaTsq[6] * xDip[i] +
-    #                  BetaTsq[34] * xDip[i] * xDip[i])
-
-    #     pfTsq[i] = (BetaTsq[0] + 
-    #                 BetaTsq[7] * xPf[i] +
-    #                 BetaTsq[35] * xPf[i] * xPf[i])
 
 #   save CDF figure for all faults 
 ax.plot([0., 1.], [67., 67.], '--r')
 ax.plot([muCrit, muCrit], [0., 100.], '-r')
 ax.fill_betweenx([0., 100.], 0.6, 0.85, color='pink', alpha=0.2)
 ax.grid(True)
-ax.set_xlim(0., 1.0)
+ax.set_xlim(0., 1.)
 ax.set_ylim(0., 100.) 
 ax.set_xlabel('Slip Tendency (Effective), T$_s$')
 ax.set_ylabel('Conditional Probability, %')
 ax.set_title(r'CDFs from MC simulation: $N_{MC}$=%i, $N_{faults}$=%i' % (nMC, nFaults))
 plt.savefig('RuhrBochum fault CDFs.png', dpi=300)
-
-#   tornado plot of relative sensitivities
-# varNames = [r'$\sigma_1$', r'$\sigma_2$', r'$\sigma_3$', 
-#             r'$\sigma_{Hmax}$ azimuth', 'Fault strike', 'Fault dip',
-#             'Pore pressure']
-
-# fT = 1 
-# lowTs = np.array([sVTsq.min(), sHTsq.min(), shTsq.min(), 
-#          sHazTsq.min(), strikeTsq.min(), dipTsq.min(), pfTsq.min()])
-# highTs = np.array([sVTsq.max(), sHTsq.max(), shTsq.max(), 
-#           sHazTsq.max(), strikeTsq.max(), dipTsq.max(), pfTsq.max()])
-# pfs.plotTornadoTsTd(lowTs, highTs, varNames, mcTsqMode, fT)
 
 print('\nProportions of red, orange & green faults:')
 print(nRed/nFaults, nOrange/nFaults, nGreen/nFaults)
