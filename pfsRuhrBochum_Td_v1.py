@@ -15,8 +15,8 @@ from scipy import linalg
 from random import  uniform
 from tqdm import tqdm
 
-print('\nStarting pfsRuhrBochum_Ts - SLIP TENDENCY - version 1...')
-print('*** Ts (effective) analysis for Ruhr-Bochum - deep carbonate ***\n')
+print('\nStarting pfsRuhrBochum_Td - DILATION TENDENCY - version 1...')
+print('*** Td analysis for Ruhr-Bochum - deep carbonate ***\n')
 tic = time.time() 
 
 ###########################################################################
@@ -204,7 +204,7 @@ ax7.grid(True)
 ax7.set_title('Variation in pore pressure, n=%i' % nMC)
 
 plt.tight_layout() 
-plt.savefig('RuhrBochum Input Histograms - Ts.png', dpi=300)
+plt.savefig('RuhrBochum Input Histograms - Td.png', dpi=300)
 
 ###########################################################################
 #   Response Surface Method (RSM)
@@ -212,19 +212,19 @@ plt.savefig('RuhrBochum Input Histograms - Ts.png', dpi=300)
 #   linear regression over multiple variables, with linear & quadratic fits 
 #   assume 3^q design of calculation points - min, max and mean of each variable 
 #   where q is the number of variables in each term:
-#      for Ts q = 7
+#      for Td q = 7
 #            for the parameters sV, sH, sh, sHaz, pf, strike & dip  
 #   all assuming Andersonian stresses with one principal stress vertical 
-qTs = 7      
+qTd = 7      
 
 # ###############################################################################
 # #   linear fit for Sf 
-nTs = pow(3, qTs)         #   3 coordinates for each variable in the RS
+nTd = pow(3, qTd)         #   3 coordinates for each variable in the RS
 
 # #   solve y = BetaSf * XlTs for BetaSf as the coefficients in the regression
 # #   XlTs is the 'design matrix' of dummy variables; one per variable 
 # #   values of -1 = min, 0 = mean, +1 = max
-XlTs = np.zeros([nTs, qTs+1])
+XlTd = np.zeros([nTd, qTd+1])
 iRow = 0 
 for iA in range(-1,+2):                         #   sV
     for iB in range(-1,+2):                     #   sH
@@ -233,72 +233,72 @@ for iA in range(-1,+2):                         #   sV
                 for iE in range(-1,+2):         #   strike 
                     for iF in range(-1,+2):     #   dip 
                         for iG in range(-1,+2): #   pf 
-                            XlTs[iRow, :] = [1, iA, iB, iC, iD, iE, iF, iG]
+                            XlTd[iRow, :] = [1, iA, iB, iC, iD, iE, iF, iG]
                             iRow += 1
 
 # ###############################################################################
 # #   quadratic fit for Ts     
-q2Ts = 0.5 * qTs * (qTs + 1) + qTs  #   total terms incl. squares and products 
-XqTs = np.zeros([int(nTs), int(q2Ts)+1])
-for iQ in range(0, nTs):
+q2Td = 0.5 * qTd * (qTd + 1) + qTd  #   total terms incl. squares and products 
+XqTd = np.zeros([int(nTd), int(q2Td)+1])
+for iQ in range(0, nTd):
     #   linear terms 
-    XqTs[iQ,1] = XlTs[iQ,1]
-    XqTs[iQ,2] = XlTs[iQ,2]
-    XqTs[iQ,3] = XlTs[iQ,3]
-    XqTs[iQ,4] = XlTs[iQ,4]
-    XqTs[iQ,5] = XlTs[iQ,5]
-    XqTs[iQ,6] = XlTs[iQ,6]
-    XqTs[iQ,7] = XlTs[iQ,7]
+    XqTd[iQ,1] = XlTd[iQ,1]
+    XqTd[iQ,2] = XlTd[iQ,2]
+    XqTd[iQ,3] = XlTd[iQ,3]
+    XqTd[iQ,4] = XlTd[iQ,4]
+    XqTd[iQ,5] = XlTd[iQ,5]
+    XqTd[iQ,6] = XlTd[iQ,6]
+    XqTd[iQ,7] = XlTd[iQ,7]
     
     #   cross products 
-    XqTs[iQ,8] = XlTs[iQ,1]*XlTs[iQ,2]
-    XqTs[iQ,9] = XlTs[iQ,1]*XlTs[iQ,3]
-    XqTs[iQ,10] = XlTs[iQ,1]*XlTs[iQ,4]
-    XqTs[iQ,11] = XlTs[iQ,1]*XlTs[iQ,5]
-    XqTs[iQ,12] = XlTs[iQ,1]*XlTs[iQ,6]
-    XqTs[iQ,13] = XlTs[iQ,1]*XlTs[iQ,7]
+    XqTd[iQ,8] = XlTd[iQ,1]*XlTd[iQ,2]
+    XqTd[iQ,9] = XlTd[iQ,1]*XlTd[iQ,3]
+    XqTd[iQ,10] = XlTd[iQ,1]*XlTd[iQ,4]
+    XqTd[iQ,11] = XlTd[iQ,1]*XlTd[iQ,5]
+    XqTd[iQ,12] = XlTd[iQ,1]*XlTd[iQ,6]
+    XqTd[iQ,13] = XlTd[iQ,1]*XlTd[iQ,7]
     
-    XqTs[iQ,14] = XlTs[iQ,2]*XlTs[iQ,3]
-    XqTs[iQ,15] = XlTs[iQ,2]*XlTs[iQ,4]
-    XqTs[iQ,16] = XlTs[iQ,2]*XlTs[iQ,5]
-    XqTs[iQ,17] = XlTs[iQ,2]*XlTs[iQ,6]
-    XqTs[iQ,18] = XlTs[iQ,2]*XlTs[iQ,7]
+    XqTd[iQ,14] = XlTd[iQ,2]*XlTd[iQ,3]
+    XqTd[iQ,15] = XlTd[iQ,2]*XlTd[iQ,4]
+    XqTd[iQ,16] = XlTd[iQ,2]*XlTd[iQ,5]
+    XqTd[iQ,17] = XlTd[iQ,2]*XlTd[iQ,6]
+    XqTd[iQ,18] = XlTd[iQ,2]*XlTd[iQ,7]
     
-    XqTs[iQ,19] = XlTs[iQ,3]*XlTs[iQ,4]
-    XqTs[iQ,20] = XlTs[iQ,3]*XlTs[iQ,5]
-    XqTs[iQ,21] = XlTs[iQ,3]*XlTs[iQ,6]
-    XqTs[iQ,22] = XlTs[iQ,3]*XlTs[iQ,7]
+    XqTd[iQ,19] = XlTd[iQ,3]*XlTd[iQ,4]
+    XqTd[iQ,20] = XlTd[iQ,3]*XlTd[iQ,5]
+    XqTd[iQ,21] = XlTd[iQ,3]*XlTd[iQ,6]
+    XqTd[iQ,22] = XlTd[iQ,3]*XlTd[iQ,7]
     
-    XqTs[iQ,23] = XlTs[iQ,4]*XlTs[iQ,5]
-    XqTs[iQ,24] = XlTs[iQ,4]*XlTs[iQ,6]
-    XqTs[iQ,25] = XlTs[iQ,4]*XlTs[iQ,7]
+    XqTd[iQ,23] = XlTd[iQ,4]*XlTd[iQ,5]
+    XqTd[iQ,24] = XlTd[iQ,4]*XlTd[iQ,6]
+    XqTd[iQ,25] = XlTd[iQ,4]*XlTd[iQ,7]
     
-    XqTs[iQ,26] = XlTs[iQ,5]*XlTs[iQ,6]
-    XqTs[iQ,27] = XlTs[iQ,5]*XlTs[iQ,7]
+    XqTd[iQ,26] = XlTd[iQ,5]*XlTd[iQ,6]
+    XqTd[iQ,27] = XlTd[iQ,5]*XlTd[iQ,7]
     
-    XqTs[iQ,28] = XlTs[iQ,6]*XlTs[iQ,7]
+    XqTd[iQ,28] = XlTd[iQ,6]*XlTd[iQ,7]
     
     #   squares 
-    XqTs[iQ,29] = XlTs[iQ,1]*XlTs[iQ,1]
-    XqTs[iQ,30] = XlTs[iQ,2]*XlTs[iQ,2]
-    XqTs[iQ,31] = XlTs[iQ,3]*XlTs[iQ,3]
-    XqTs[iQ,32] = XlTs[iQ,4]*XlTs[iQ,4]
-    XqTs[iQ,33] = XlTs[iQ,5]*XlTs[iQ,5]
-    XqTs[iQ,34] = XlTs[iQ,6]*XlTs[iQ,6]
-    XqTs[iQ,35] = XlTs[iQ,7]*XlTs[iQ,7]
+    XqTd[iQ,29] = XlTd[iQ,1]*XlTd[iQ,1]
+    XqTd[iQ,30] = XlTd[iQ,2]*XlTd[iQ,2]
+    XqTd[iQ,31] = XlTd[iQ,3]*XlTd[iQ,3]
+    XqTd[iQ,32] = XlTd[iQ,4]*XlTd[iQ,4]
+    XqTd[iQ,33] = XlTd[iQ,5]*XlTd[iQ,5]
+    XqTd[iQ,34] = XlTd[iQ,6]*XlTd[iQ,6]
+    XqTd[iQ,35] = XlTd[iQ,7]*XlTd[iQ,7]
     
-XqTs[:,0] = 1 
-Xq2Ts = np.dot(XqTs.T, XqTs)  
+XqTd[:,0] = 1 
+Xq2Td = np.dot(XqTd.T, XqTd)  
 
-#   get y values for Ts 
-ySV = XlTs[:,1] * rangeSV / 2. + meanSV 
-ySH = XlTs[:,2] * rangeSH / 2. + meanSH 
-ySh = XlTs[:,3] * rangeSh / 2. + meanSh 
-ySHaz = XlTs[:,4] * rangeSHaz / 2. + meanSHaz 
+# #   get y values for Ts 
+ySV = XlTd[:,1] * rangeSV / 2. + meanSV 
+ySH = XlTd[:,2] * rangeSH / 2. + meanSH 
+ySh = XlTd[:,3] * rangeSh / 2. + meanSh 
+ySHaz = XlTd[:,4] * rangeSHaz / 2. + meanSHaz 
 ySHaz[np.ix_(ySHaz < 0.)] += 180.
-yPf = XlTs[:,7] * rangePf / 2. + meanPf 
+yPf = XlTd[:,7] * rangePf / 2. + meanPf 
 
-#   start Ts CDF figure for all faults 
+# #   start Ts CDF figure for all faults 
 xSV = (SV - meanSV) / (rangeSV / 2.)
 xSH = (SH - meanSH) / (rangeSH / 2.)  
 xSh = (Sh - meanSh) / (rangeSh / 2.)  
@@ -306,14 +306,13 @@ xSHaz = (SHazTrue - meanSHaz) / (rangeSHaz / 2.)
 xPf = (Pf - meanPf) / (rangePf / 2.) 
 
 fig, ax = plt.subplots(figsize=(6,4))
-#   arbitrary critical friction value to assess fault stability 
-muCrit = 0.6 
 sColour = []
 strikeTsq = np.zeros([nFaults,])
-ysigmaN = np.zeros([nTs,])
-ytau = np.zeros([nTs,])
+ysigmaN = np.zeros([nTd,])
+ytau = np.zeros([nTd,])
 
 #   for each fault  
+TdCrit = 0.5 
 nRed = 0
 nOrange = 0
 nGreen = 0  
@@ -335,25 +334,32 @@ for j in tqdm(range(nFaults)):
     rangeDip = maxDip - minDip 
     
     #   do regression for this fault 
-    yStrike = XlTs[:,5] * rangeStrike / 2. + meanStrike 
+    yStrike = XlTd[:,5] * rangeStrike / 2. + meanStrike 
     yStrike[np.ix_(yStrike < 0.)] += 360.
 
-    yDip = XlTs[:,6] * rangeDip / 2. + meanDip 
+    yDip = XlTd[:,6] * rangeDip / 2. + meanDip 
 
-    for i in range(0, nTs):
-        ysigmaN[i], ytau[i] = pfs.calcEffAndersonianStressOnPlane(ySV[i], ySH[i], ySh[i], ySHaz[i], thisStrike, thisDip, yPf[i]) 
-    yTs = ytau / ysigmaN
+    ySigma1 = np.zeros(nTd,)
+    ySigma3 = np.zeros(nTd,)
+    for i in range(0, nTd):
+        ysigmaN[i], ytau[i] = pfs.calcAndersonianStressOnPlane(ySV[i], ySH[i], ySh[i], ySHaz[i], thisStrike, thisDip) 
+        ySigma1[i] = np.max([ySV[i], ySH[i], ySh[i]])
+        ySigma3[i] = np.min([ySV[i], ySH[i], ySh[i]])
+        if ysigmaN[i] < ySigma3[i]:
+            print('\nNormal stress < minimum stress!')
+        
+    yTd = (ySigma1 - ysigmaN) / (ySigma1 - ySigma3) 
     
-    #   get y values for Ts
-    yTsq = np.zeros([int(q2Ts)+1,])
-    for i in range(0, int(q2Ts)+1):
-        for k in range(0, nTs):
-            yTsq[i] = yTsq[i] + XqTs[k,i] * yTs[k] 
+    #   get y values for Td
+    yTdq = np.zeros([int(q2Td)+1,])
+    for i in range(0, int(q2Td)+1):
+        for k in range(0, nTd):
+            yTdq[i] = yTdq[i] + XqTd[k,i] * yTd[k] 
             
-    yTsq[0] = sum(yTs)
+    yTdq[0] = sum(yTd)
         
     #   solve for beta using least squares 
-    BetaTsq, res, rank, s = linalg.lstsq(Xq2Ts, yTsq)
+    BetaTdq, res, rank, s = linalg.lstsq(Xq2Td, yTdq)
     
     #   analyse variance, residuals etc 
 #    RsqTsq, RsqATsq, FTsq, MSRTsq, MSETsq = frs.calcANOVAresid(yTs, XqTs, BetaTsq)
@@ -365,92 +371,92 @@ for j in tqdm(range(nFaults)):
     xDip = (thisDip - meanDip) / (rangeDip / 2.)  
     
     #   run nMC calculations of Ts using set ranges     
-    mcTsq = np.zeros([nMC,])
+    mcTdq = np.zeros([nMC,])
     for i in range(0, nMC):
         
-        mcTsq[i] = abs(BetaTsq[0] + 
-                        BetaTsq[1] * xSV[i] +
-                        BetaTsq[2] * xSH[i] +
-                        BetaTsq[3] * xSh[i] +
-                        BetaTsq[4] * xSHaz[i] +
-                        BetaTsq[5] * xStrike +
-                        BetaTsq[6] * xDip +
-                        BetaTsq[7] * xPf[i] +
+        mcTdq[i] = abs(BetaTdq[0] + 
+                        BetaTdq[1] * xSV[i] +
+                        BetaTdq[2] * xSH[i] +
+                        BetaTdq[3] * xSh[i] +
+                        BetaTdq[4] * xSHaz[i] +
+                        BetaTdq[5] * xStrike +
+                        BetaTdq[6] * xDip +
+                        BetaTdq[7] * xPf[i] +
                     
-                        BetaTsq[8] * xSV[i] * xSH[i] + 
-                        BetaTsq[9] * xSV[i] * xSh[i] + 
-                        BetaTsq[10] * xSV[i] * xSHaz[i] + 
-                        BetaTsq[11] * xSV[i] * xStrike + 
-                        BetaTsq[12] * xSV[i] * xDip + 
-                        BetaTsq[13] * xSV[i] * xPf[i] + 
+                        BetaTdq[8] * xSV[i] * xSH[i] + 
+                        BetaTdq[9] * xSV[i] * xSh[i] + 
+                        BetaTdq[10] * xSV[i] * xSHaz[i] + 
+                        BetaTdq[11] * xSV[i] * xStrike + 
+                        BetaTdq[12] * xSV[i] * xDip + 
+                        BetaTdq[13] * xSV[i] * xPf[i] + 
                     
-                        BetaTsq[14] * xSH[i] * xSh[i] + 
-                        BetaTsq[15] * xSH[i] * xSHaz[i] + 
-                        BetaTsq[16] * xSH[i] * xStrike + 
-                        BetaTsq[17] * xSH[i] * xDip + 
-                        BetaTsq[18] * xSH[i] * xPf[i] + 
+                        BetaTdq[14] * xSH[i] * xSh[i] + 
+                        BetaTdq[15] * xSH[i] * xSHaz[i] + 
+                        BetaTdq[16] * xSH[i] * xStrike + 
+                        BetaTdq[17] * xSH[i] * xDip + 
+                        BetaTdq[18] * xSH[i] * xPf[i] + 
                     
-                        BetaTsq[19] * xSh[i] * xSHaz[i] + 
-                        BetaTsq[20] * xSh[i] * xStrike + 
-                        BetaTsq[21] * xSh[i] * xDip + 
-                        BetaTsq[22] * xSh[i] * xPf[i] + 
+                        BetaTdq[19] * xSh[i] * xSHaz[i] + 
+                        BetaTdq[20] * xSh[i] * xStrike + 
+                        BetaTdq[21] * xSh[i] * xDip + 
+                        BetaTdq[22] * xSh[i] * xPf[i] + 
                     
-                        BetaTsq[23] * xSHaz[i] * xStrike + 
-                        BetaTsq[24] * xSHaz[i] * xDip + 
-                        BetaTsq[25] * xSHaz[i] * xPf[i] + 
+                        BetaTdq[23] * xSHaz[i] * xStrike + 
+                        BetaTdq[24] * xSHaz[i] * xDip + 
+                        BetaTdq[25] * xSHaz[i] * xPf[i] + 
                     
-                        BetaTsq[26] * xStrike * xDip + 
-                        BetaTsq[27] * xStrike * xPf[i] + 
+                        BetaTdq[26] * xStrike * xDip + 
+                        BetaTdq[27] * xStrike * xPf[i] + 
                     
-                        BetaTsq[28] * xDip * xPf[i] +
+                        BetaTdq[28] * xDip * xPf[i] +
 
-                        BetaTsq[29] * xSV[i] * xSV[i] + 
-                        BetaTsq[30] * xSH[i] * xSH[i] + 
-                        BetaTsq[31] * xSh[i] * xSh[i] + 
-                        BetaTsq[32] * xSHaz[i] * xSHaz[i] + 
-                        BetaTsq[33] * xStrike * xStrike + 
-                        BetaTsq[34] * xDip * xDip +
-                        BetaTsq[35] * xPf[i] * xPf[i])
+                        BetaTdq[29] * xSV[i] * xSV[i] + 
+                        BetaTdq[30] * xSH[i] * xSH[i] + 
+                        BetaTdq[31] * xSh[i] * xSh[i] + 
+                        BetaTdq[32] * xSHaz[i] * xSHaz[i] + 
+                        BetaTdq[33] * xStrike * xStrike + 
+                        BetaTdq[34] * xDip * xDip +
+                        BetaTdq[35] * xPf[i] * xPf[i])
        
     #   calc CDF from all nMC runs for this fault segment  
-    sortTs = np.sort(mcTsq)
-    cumTs = (np.cumsum(sortTs) / np.sum(sortTs)) * 100.
+    sortTd = np.sort(mcTdq)
+    cumTd = (np.cumsum(sortTd) / np.sum(sortTd)) * 100.
     
     #   get the P value for the chosen critical Ts
     #   colour code this fault segment 
-    if np.min(sortTs) <= muCrit and np.max(sortTs) >= muCrit:    
-        PTsCrit = np.min(cumTs[np.ix_(sortTs > muCrit)])
-        if PTsCrit > 99.:
+    if np.min(sortTd) <= TdCrit and np.max(sortTd) >= TdCrit:    
+        PTdCrit = np.min(cumTd[np.ix_(sortTd > TdCrit)])
+        if PTdCrit > 99.:
             sColour.append('green')
             nGreen += 1 
-        elif PTsCrit < 67.:
+        elif PTdCrit < 67.:
             sColour.append('red')
             nRed += 1 
-        elif PTsCrit < 99. and PTsCrit > 67.:
+        elif PTdCrit < 99. and PTdCrit > 67.:
             sColour.append('orange')
             nOrange += 1 
-    elif np.min(sortTs) > muCrit:
-        PTsCrit = 0.
+    elif np.min(sortTd) > TdCrit:
+        PTdCrit = 0.
         sColour.append('red')
         nRed += 1 
     else:
-        PTsCrit = 100.
+        PTdCrit = 100.
         sColour.append('green') 
         nGreen += 1 
         
-    ax.plot(sortTs, cumTs, color=sColour[j], lw=0.5)
+    ax.plot(sortTd, cumTd, color=sColour[j], lw=0.5)
     
+
 #   save CDF figure for all faults 
 ax.plot([0., 1.], [67., 67.], '--r')
-ax.plot([muCrit, muCrit], [0., 100.], '-r')
-ax.fill_betweenx([0., 100.], 0.6, 0.85, color='pink', alpha=0.2)
+ax.plot([TdCrit, TdCrit], [0., 100.], '-r')
 ax.grid(True)
 ax.set_xlim(0., 1.)
 ax.set_ylim(0., 100.) 
-ax.set_xlabel('Slip Tendency (Effective), T$_s$')
+ax.set_xlabel('Dilation Tendency (Effective), T$_s$')
 ax.set_ylabel('Conditional Probability, %')
 ax.set_title(r'CDFs from MC simulation: $N_{MC}$=%i, $N_{faults}$=%i' % (nMC, nFaults))
-plt.savefig('RuhrBochum fault CDFs - Ts.png', dpi=300)
+plt.savefig('RuhrBochum fault CDFs - Td.png', dpi=300)
 
 print('\nProportions of red, orange & green faults:')
 print(nRed/nFaults, nOrange/nFaults, nGreen/nFaults)
@@ -463,4 +469,4 @@ for i in range(nFaults):
 fOut.close() 
 
 toc = time.time()
-print('\n...finished pfsRuhrBochum_Ts, %3.2f sec elapsed.' % (toc-tic))
+print('\n...finished pfsRuhrBochum_Td, %3.2f sec elapsed.' % (toc-tic))
